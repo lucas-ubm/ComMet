@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+#install.packages("amanpg", "elasticnet")
+library(amanpg)
+library(elasticnet)
+library(stringr)
+cov_con <- read.csv('model/cov_free_con_corr.csv', header=FALSE)
+cov_un <- read.csv('model/cov_free_un_corr.csv', header=FALSE)
+```
+
+```{r}
+l = 1e-8
+```
+```{r}
+lambda1 <- 0.2 * matrix(data=1, nrow=dim(cov_con)[1], ncol=1)
+result_con = amanpg::spca.amanpg(cov_con, lambda1, Inf, type=1)
+#save(result_con, file="ecoli_con.RData")
+```
+```{r}
+lambda1 <- 0.2 * matrix(data=1, nrow=dim(cov_un)[1], ncol=1)
+result_un = amanpg::spca.amanpg(cov_un, lambda1, Inf, type=1)
+#save(result_un, file="ecoli_un.RData")
+```
+
+```{r}
+for (l in c(1, 1e-2, 1e-4, 1e-6, 1e-8, 1e-10, 1e-12)){
+  
+  lambda1 <- l * matrix(data=1, nrow=dim(cov_con)[1], ncol=1)
+  lambda2 <- l * matrix(data=1, nrow=dim(cov_un)[1], ncol=1)
+  #a <- c(seq(0, 1e-8, length.out = 32), seq(1e-8, 1, length.out = dim(cov_con)[1]-32))
+  #a <- c(seq(0, 1e-8, length.out = 32), seq(1e-8, 1, length.out = dim(cov_un)[1]-32))
+
+  result_con = elasticnet::spca(cov_con, K=dim(cov_con)[1], type="Gram", sparse="penalty", para=lambda1)
+  result_un = elasticnet::spca(cov_un, K=dim(cov_un)[1], type="Gram", sparse="penalty", para=lambda2)
+  pev_un = stringr::str_glue('spca/un_pev_spca{l}.csv')
+  pev_con = stringr::str_glue('spca/con_pev_spca{l}.csv')
+  pcs_un = stringr::str_glue('spca/un_pcs_spca{l}.csv')
+  pcs_con = stringr::str_glue('spca/con_pcs_spca{l}.csv')
+  
+  write.csv(result_un$pev, pev_un)
+  write.csv(result_con$pev, pev_con)
+  write.csv(result_un$loadings, pcs_un)
+  write.csv(result_con$loadings, pcs_con)
+  
+
+}
+```
+
+```{r}
+lambda1 <- 1e-8 * matrix(data=1, nrow=dim(cov_con)[1], ncol=1)
+  #a <- c(seq(0, 1e-8, length.out = 32), seq(1e-8, 1, length.out = dim(cov_con)[1]-32))
+  #a <- c(seq(0, 1e-8, length.out = 32), seq(1e-8, 1, length.out = dim(cov_un)[1]-32))
+
+result_con = elasticnet::spca(cov_con, K=dim(cov_con)[1], type="Gram", sparse="penalty", para=lambda1)
+result_un = elasticnet::spca(cov_un, K=dim(cov_un)[1], type="Gram", sparse="penalty", para=lambda1)
+```
+```{r}
+result_con
+```
+
+
+```{r}
+write.csv(result_un$pev, 'un_pev_spca.csv')
+write.csv(result_con$pev, 'con_pev_spca.csv')
+write.csv(result_un$loadings, 'un_pcs_spca.csv')
+write.csv(result_con$loadings, 'con_pcs_spca.csv')
+```
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
